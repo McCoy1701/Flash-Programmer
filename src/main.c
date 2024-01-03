@@ -37,12 +37,12 @@ int main( int argc, char* argv[] )
   {
     byteProgram( addr, bytes[ i ] );
      
-    if ( ++addr >= 0x7fff )
+//    printf( " addr: %04x, data: %02x, size: %zu\n ", addr, bytes[ i ], size );
+   
+    if ( addr++ >= 0x7fff )
     {
       addr = 0x00;
     }
-
-    printf( " addr: %04x, data: %02x, size: %zu\n ", addr, bytes[i], size );
   }
   
   gettimeofday( &end, NULL );
