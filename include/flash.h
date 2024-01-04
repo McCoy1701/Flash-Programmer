@@ -40,11 +40,15 @@ void softwareIdEntry( void );
 
 void softwareIdExit( void );
 
-void writeChip( unsigned int addr, unsigned int data );
+void testId( void );
+
+void writeFlash( unsigned int addr, unsigned int data );
 
 void writeAddr( unsigned int addr );
 
 void writeData( unsigned int data );
+
+unsigned int readFlash( unsigned int addr );
 
 unsigned int readData( void );
 

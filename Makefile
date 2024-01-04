@@ -10,17 +10,20 @@ BIN_DIR = bin
 all: $(BIN_DIR)
 
 $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c
-	$(CC) $< -c $(CFLAGS) -o $@
+	$(CC) $< -c $(CFLAGS) $(CINC) -o $@
+
+$(OBJ_DIR)/utils.o: $(SRC_DIR)/utils.c
+	$(CC) $< -c $(CFLAGS) $(CINC) -o $@
 
 $(OBJ_DIR)/flash.o: $(SRC_DIR)/flash.c
-	$(CC) $< -c $(CFLAGS) -o $@
+	$(CC) $< -c $(CFLAGS) $(CINC) -o $@
 
 $(OBJ_DIR)/command.o: $(SRC_DIR)/command.c
-	$(CC) $< -c $(CFLAGS) -o $@
+	$(CC) $< -c $(CFLAGS) $(CINC) -o $@
 
-$(BIN_DIR): always $(OBJ_DIR)/main.o $(OBJ_DIR)/flash.o $(OBJ_DIR)/command.o
+$(BIN_DIR): always $(OBJ_DIR)/main.o $(OBJ_DIR)/flash.o $(OBJ_DIR)/command.o $(OBJ_DIR)/utils.o
 	mkdir -p $(BIN_DIR)
-	$(CC) $(OBJ_DIR)/main.o $(OBJ_DIR)/flash.o $(OBJ_DIR)/command.o $(CFLAGS) -o $(BIN_DIR)/$@
+	$(CC) $(OBJ_DIR)/main.o $(OBJ_DIR)/flash.o $(OBJ_DIR)/command.o $(OBJ_DIR)/utils.o $(CFLAGS) $(CINC) -o $(BIN_DIR)/$@
 
 .PHONY: clean
 clean:

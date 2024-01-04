@@ -11,7 +11,7 @@ const int DATA[ 8 ]  = { 18, 19, 20, 21, 22, 23, 24, 25 };
 void initFlashProgrammer( void )
 {
   setAddrOutput();
-  setDataOutput();
+  setDataInput();
 
   pinMode( WEB, OUTPUT );
   pinMode( OEB, OUTPUT );
@@ -19,68 +19,101 @@ void initFlashProgrammer( void )
 
   digitalWrite( WEB, HIGH );
   digitalWrite( OEB, HIGH );
-  digitalWrite( CEB, LOW  );
+  digitalWrite( CEB, HIGH );
 }
 
 void byteProgram( unsigned int addr, unsigned int byte )
 {
-  setDataOutput();
-
-  writeChip( 0x5555, 0xaa );
-  writeChip( 0x2aaa, 0x55 );
-  writeChip( 0x5555, 0xa0 );
-  writeChip( addr  , byte );
+  writeFlash( 0x5555, 0xaa );
+  writeFlash( 0x2aaa, 0x55 );
+  writeFlash( 0x5555, 0xa0 );
+  writeFlash( addr  , byte );
 
   delayMicro( 20 );
 }
 
-void chipErase( void )
+void flashErase( void )
 {
-  setDataOutput();
-
-  writeChip( 0x5555, 0xaa );
-  writeChip( 0x2aaa, 0x55 );
-  writeChip( 0x5555, 0x80 );
-  writeChip( 0x5555, 0xaa );
-  writeChip( 0x2aaa, 0x55 );
-  writeChip( 0x5555, 0x10 );
+  writeFlash( 0x5555, 0xaa );
+  writeFlash( 0x2aaa, 0x55 );
+  writeFlash( 0x5555, 0x80 );
+  writeFlash( 0x5555, 0xaa );
+  writeFlash( 0x2aaa, 0x55 );
+  writeFlash( 0x5555, 0x10 );
 
   delay( 100 );
 }
 
 void softwareIdEntry( void )
 {
-  setDataOutput();
-
-  writeChip( 0x5555, 0xaa );
-  writeChip( 0x2aaa, 0x55 );
-  writeChip( 0x5555, 0x90 );
-
-  delayMicro( 1 );
+  writeFlash( 0x5555, 0xaa );
+  writeFlash( 0x2aaa, 0x55 );
+  writeFlash( 0x5555, 0x90 );
 }
 
 void softwareIdExit( void )
 {
-  setDataOutput();
-
-  writeChip( 0x5555, 0xaa );
-  writeChip( 0x2aaa, 0x55 );
-  writeChip( 0x5555, 0xf0 );
-
-  delayMicro( 1 );
+  writeFlash( 0x5555, 0xaa );
+  writeFlash( 0x2aaa, 0x55 );
+  writeFlash( 0x5555, 0xf0 );
 }
 
-void writeChip( unsigned int addr, unsigned int data )
+void testId( void )
 {
-  digitalWrite( WEB, HIGH );
-  digitalWrite( OEB, HIGH );
+  softwareIdExit();
+  softwareIdEntry();
 
+  unsigned int temp = readFlash( 0x0000 );
+
+  if (temp != 0xbf )
+  {
+    printf( "read wrong id: %02x\n", temp );
+    exit(0);
+  }
+
+  temp = readFlash( 0x0001 );
+
+  switch ( temp )
+  {
+    case 0xb5:
+      printf( "SST39SF010A detected ( 128k * 8 )\n" );
+      break;
+
+    case 0xb6:
+      printf( "SST39SF020A detected ( 256k * 8 )\n" );
+      break;
+
+    case 0xb7:
+      printf( "SST39SF040 detected ( 512k * 8 )\n" );
+      break;
+
+    default:
+      printf( "unknown chip: %02x\n", temp );
+      exit( 0 );
+      break;
+  }
+
+  softwareIdExit();
+}
+
+void writeFlash( unsigned int addr, unsigned int data )
+{
   writeAddr( addr );
-  writeData( data );
+  
+//  delayMicro( 1 );
 
+  setDataOutput(); 
+  writeData( data );
+  
   digitalWrite( WEB, LOW  );
-  delayMicro( 1 );
+  digitalWrite( CEB, LOW  );
+
+//  delayMicro( 1 );
+  
   digitalWrite( WEB, HIGH );
+  digitalWrite( CEB, HIGH );
+  setDataInput();
+//  delayMicro( 1 );
 }
 
 void writeAddr( unsigned int addr )
@@ -104,31 +137,53 @@ void writeAddr( unsigned int addr )
 
 void writeData( unsigned int data )
 {
-  digitalWrite( DATA[ 0 ], 1 & ( data >> 0 ) );
-  digitalWrite( DATA[ 1 ], 1 & ( data >> 1 ) );
-  digitalWrite( DATA[ 2 ], 1 & ( data >> 2 ) );
-  digitalWrite( DATA[ 3 ], 1 & ( data >> 3 ) );
-  digitalWrite( DATA[ 4 ], 1 & ( data >> 4 ) );
-  digitalWrite( DATA[ 5 ], 1 & ( data >> 5 ) );
-  digitalWrite( DATA[ 6 ], 1 & ( data >> 6 ) );
-  digitalWrite( DATA[ 7 ], 1 & ( data >> 7 ) );
+  digitalWrite( DATA[ 0 ], ( data & 1   ) ? 1 : 0 );
+  digitalWrite( DATA[ 1 ], ( data & 2   ) ? 1 : 0 );
+  digitalWrite( DATA[ 2 ], ( data & 4   ) ? 1 : 0 );
+  digitalWrite( DATA[ 3 ], ( data & 8   ) ? 1 : 0 );
+  digitalWrite( DATA[ 4 ], ( data & 16  ) ? 1 : 0 );
+  digitalWrite( DATA[ 5 ], ( data & 32  ) ? 1 : 0 );
+  digitalWrite( DATA[ 6 ], ( data & 64  ) ? 1 : 0 );
+  digitalWrite( DATA[ 7 ], ( data & 128 ) ? 1 : 0 );
+}
+
+unsigned int readFlash( unsigned int addr )
+{
+  writeAddr( addr );
+  delayMicro( 1 );
+  
+  setDataInput();
+  delayMicro( 1 );
+
+  digitalWrite( CEB, LOW );
+  digitalWrite( OEB, LOW );
+  delayMicro( 1 );
+
+  unsigned int result = readData();
+  
+  digitalWrite( CEB, LOW );
+  digitalWrite( OEB, LOW );
+  delayMicro( 1 );
+
+  return result;
 }
 
 unsigned int readData( void )
 {
   setDataInput();
+
+  unsigned int result = 0;
   
-  digitalWrite( WEB, HIGH );
-  digitalWrite( OEB, LOW  );
-
-  unsigned int temp;
-
-  for ( int i = 0; i < 8; i++ )
-  {
-    temp = digitalRead( DATA[i] ) << i;
-  }
-
-  return temp;
+  if ( digitalRead( DATA[0] ) ) result |= 1;
+  if ( digitalRead( DATA[1] ) ) result |= 2;
+  if ( digitalRead( DATA[2] ) ) result |= 4;
+  if ( digitalRead( DATA[3] ) ) result |= 8;
+  if ( digitalRead( DATA[4] ) ) result |= 16;
+  if ( digitalRead( DATA[5] ) ) result |= 32;
+  if ( digitalRead( DATA[6] ) ) result |= 64;
+  if ( digitalRead( DATA[7] ) ) result |= 128;
+	
+  return result;
 }
 
 void setAddrOutput( void )

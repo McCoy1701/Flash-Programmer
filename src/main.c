@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <string.h>
 
+#include "utils.h"
 #include "command.h"
 #include "flash.h"
 
@@ -14,6 +15,8 @@ double executionTime;
 uint8_t* bytes;
 size_t size;
 
+const int DATAtemp[ 8 ]  = { 18, 19, 20, 21, 22, 23, 24, 25 };
+
 int main( int argc, char* argv[] )
 {
   gettimeofday( &start, NULL );
@@ -22,28 +25,33 @@ int main( int argc, char* argv[] )
   
   initFlashProgrammer();
   
-  for ( int i = 1; i < argc; i++ )
+  testId();
+  
+  /*  for ( int i = 1; i < argc; i++ )
   {
     if (strcmp( argv[ i ], "-w" ) == 0 )
     {
       bytes = readFile( argv[ i + 1 ], &size );
-      printf( " size: %zu\n ", size );
+      //printf( " size: %zu\n ", size );
     }
-  }
+  }*/
 
-  unsigned int addr = 0x00;
+  //chipErase();
+
+  /*unsigned int addr = 0x00;
 
   for ( int i = 0; i < size; i++ )
   {
     byteProgram( addr, bytes[ i ] );
-     
-//    printf( " addr: %04x, data: %02x, size: %zu\n ", addr, bytes[ i ], size );
+    
+//  progressbar( i, size );
+//  printf( " addr: %04x, data: %02x, size: %zu\n ", addr, bytes[ i ], size );
    
     if ( addr++ >= 0x7fff )
     {
       addr = 0x00;
     }
-  }
+  }*/
   
   gettimeofday( &end, NULL );
   
@@ -51,5 +59,5 @@ int main( int argc, char* argv[] )
 
   printf( " Time taken to program: %f\n ", executionTime );
 
-  free( bytes );
+  //free( bytes );
 }
