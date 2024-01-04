@@ -21,9 +21,9 @@ $(OBJ_DIR)/flash.o: $(SRC_DIR)/flash.c
 $(OBJ_DIR)/command.o: $(SRC_DIR)/command.c
 	$(CC) $< -c $(CFLAGS) $(CINC) -o $@
 
-$(BIN_DIR): always $(OBJ_DIR)/main.o $(OBJ_DIR)/flash.o $(OBJ_DIR)/command.o $(OBJ_DIR)/utils.o
+$(BIN_DIR): always $(OBJ_DIR)/main.o
 	mkdir -p $(BIN_DIR)
-	$(CC) $(OBJ_DIR)/main.o $(OBJ_DIR)/flash.o $(OBJ_DIR)/command.o $(OBJ_DIR)/utils.o $(CFLAGS) $(CINC) -o $(BIN_DIR)/$@
+	$(CC) $(OBJ_DIR)/main.o $(CFLAGS) $(CINC) -o $(BIN_DIR)/$@
 
 .PHONY: clean
 clean:
