@@ -30,15 +30,14 @@ int main( int argc, char* argv[] )
     {
       bytes = readFile( argv[ i + 1 ], &size );
       
+      printf( "writing %zu bytes to flash device\n", size );
+
       unsigned int addr = 0x00;
 
       for ( int i = 0; i < size; i++ )
       {
-        writeAddr( 0x0000 );
-        writeData( 0x00 );
-        
         byteProgram( addr, bytes[ i ] );
-    
+        
         progressbar( i, size );
     //  printf( " addr: %04x, data: %02x, size: %zu\n ", addr, bytes[ i ], size );
    
@@ -49,12 +48,12 @@ int main( int argc, char* argv[] )
       }
 
       printf( "\nFinished! Wrote %zu bytes\n", size );
+      
+      addr = 0x00;
     }
 
     if (strcmp( argv[ i ], "-e" ) == 0 )
     {
-      writeAddr( 0x0000 );
-      writeData( 0x00 );
       flashErase();
     }
     
@@ -65,13 +64,78 @@ int main( int argc, char* argv[] )
     
     if (strcmp( argv[ i ], "-r" ) == 0 )
     {
-      writeAddr( 0x0000 );
-      writeData( 0x00 );
-      for (int i = 0x0000; i < 0x00ff; i ++ )
+      int count = atoi( argv[ i + 1 ] );
+      
+      uint8_t *arrayTemp = ( uint8_t* )malloc( sizeof( uint8_t ) * count );
+      
+      if ( arrayTemp == NULL )
       {
-        unsigned int temp = readFlash( i );
-        printf("addr: %04x, data: %02x\n", i, temp);
-      } 
+        printf( "failed to allocate memory for array" );
+        exit(0);
+      }
+
+      for (int i = 0; i < count; i ++ )
+      {
+        arrayTemp[ i ] = readFlash( i );
+        //printf("addr: %04x, data: %02x\n", i, temp);
+      }
+      
+      for ( int i = 0; i < count; i += 16 )
+      {
+        printf( "%04x: | ", i );
+
+        for ( int j = 0; j < 16; j += 2 )
+        {
+          if ( i + j < count )
+          {
+            printf( "%02x%02x", arrayTemp[ ( i + j ) + 1 ], arrayTemp[ i + j ] );
+          }
+          else
+          {
+            printf( "  " );
+          }
+
+          if ( j < 14 )
+          {
+            printf( " " );
+          }
+        }
+
+        printf( "\n" );
+      }
+
+      free(arrayTemp);
+    }
+
+    if ( strcmp( argv[ i ], "-c" ) == 0 )
+    {
+      bytes = readFile( argv[ i + 1 ], &size );
+      
+      printf( "\nChecking validity of %zu bytes\n", size );
+      
+      unsigned int addr = 0;
+
+      int checked = 0;
+
+      for ( int i = 0; i < size; i++ )
+      {
+        unsigned int tempByte = readFlash( addr );
+
+        if ( tempByte == bytes[ i ] )
+        {
+          checked++;
+        }
+       
+        else
+        {
+          printf( "failed to program Addr: %04x, Data: %02x, Failed Data: %02x\n", addr, bytes[i], tempByte );
+        }
+
+        progressbar( i, size );
+        printf( "                                                          %d/%zu\r", checked, size );
+        
+        if ( addr ++ > 0x7fff ) addr = 0x00;
+      }
     }
   }
 
@@ -108,23 +172,33 @@ void initFlashProgrammer( void )
 
 void byteProgram( unsigned int addr, unsigned int byte )
 {
-  setDataOutput();
-
   if (byte == 0xff ) return; 
-  
+
+  setDataOutput();
+ 
+  digitalWrite( WEB, HIGH );
+  digitalWrite( OEB, HIGH );
+  digitalWrite( CEB, LOW  );
+
   writeFlash( 0x5555, 0xaa );
   writeFlash( 0x2aaa, 0x55 );
   writeFlash( 0x5555, 0xa0 );
   writeFlash( addr  , byte );
 
   delayMicro( 21 );
+
+  digitalWrite( CEB, HIGH );
 }
 
 void flashErase( void )
 {
-  setDataOutput();
-  
   printf("erasing flash...\n");
+
+  setDataOutput();
+
+  digitalWrite( WEB, HIGH );
+  digitalWrite( OEB, HIGH );
+  digitalWrite( CEB, LOW  );
 
   writeFlash( 0x5555, 0xaa );
   writeFlash( 0x2aaa, 0x55 );
@@ -134,27 +208,40 @@ void flashErase( void )
   writeFlash( 0x5555, 0x10 );
   
   delay( 200 );
+  digitalWrite( CEB, HIGH );
 }
 
 void softwareIdEntry( void )
 {
   setDataOutput();
 
+  digitalWrite( WEB, HIGH );
+  digitalWrite( OEB, HIGH );
+  digitalWrite( CEB, LOW  );
+
   writeFlash( 0x5555, 0xaa );
   writeFlash( 0x2aaa, 0x55 );
   writeFlash( 0x5555, 0x90 );
+  
+  digitalWrite( CEB, HIGH );
 }
 
 void softwareIdExit( void )
 {
   setDataOutput();
+
+  digitalWrite( WEB, HIGH );
+  digitalWrite( OEB, HIGH );
+  digitalWrite( CEB, LOW  );
   
   writeFlash( 0x5555, 0xaa );
   writeFlash( 0x2aaa, 0x55 );
   writeFlash( 0x5555, 0xf0 );
+  
+  digitalWrite( CEB, HIGH );
 }
 
-void testId( void )
+unsigned int testId( void )
 {
   softwareIdExit();
   softwareIdEntry();
@@ -190,20 +277,22 @@ void testId( void )
   }
 
   softwareIdExit();
+  return temp;
 }
 
 void writeFlash( unsigned int addr, unsigned int data )
 {
   writeAddr( addr );
   
+  delayMicro( 1 ); 
+  
   digitalWrite( WEB, LOW  );
-  digitalWrite( OEB, HIGH );
-  digitalWrite( CEB, LOW  );
   
   writeData( data );
   
+  delayMicro( 1 );
+  
   digitalWrite( WEB, HIGH );
-  //digitalWrite( CEB, HIGH );
 }
 
 void writeAddr( unsigned int addr )
@@ -372,6 +461,6 @@ void progressbar( int progress, int total )
       printf( " " );
     }
   }
-  printf( "] %d%%\r", ( int )percentage * 100 );
+  printf( "] \r" );
   fflush( stdout );
 }
