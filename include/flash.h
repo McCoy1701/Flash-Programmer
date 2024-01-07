@@ -40,7 +40,7 @@ void softwareIdEntry( void );
 
 void softwareIdExit( void );
 
-void testId( void );
+unsigned int testId( void );
 
 void writeFlash( unsigned int addr, unsigned int data );
 
