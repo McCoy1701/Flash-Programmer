@@ -6,8 +6,7 @@
 #include <string.h>
 
 #include "flash.h"
-#include "command.h"
-#include "utils.h"
+#include "commandLineRead.h"
 
 struct timeval start, end;
 double executionTime;
@@ -92,7 +91,7 @@ int main( int argc, char* argv[] )
         {
           if ( i + j < count )
           {
-            printf( "%02x%02x", arrayTemp[ ( i + j ) + 1 ], arrayTemp[ i + j ] );
+            printf( "%02x%02x", arrayTemp[ ( i + j ) ], arrayTemp[ ( i + j ) + 1 ] );
           }
           else
           {
@@ -142,13 +141,23 @@ int main( int argc, char* argv[] )
 
       printf( "\n" );
     }
+
+    if (strcmp( argv[ i ], "-h" ) == 0 )
+    {
+      printf("Help - SST30SFXXX Flash Programmer\n");
+      printf("  -w file   : Write a binary file to flash device\n");
+      printf("  -r amount : Read amount of bytes( -r 150 )\n");
+      printf("  -v        : Check the version of Flash\n");
+      printf("  -c file   : Verify the contents of Flash are the same as the file\n");
+      printf("  -e        : Erase the whole Flash\n");
+    }
   }
 
   gettimeofday( &end, NULL );
   
   executionTime = ( end.tv_sec - start.tv_sec ) + ( end.tv_usec - start.tv_usec ) / 1000000.0f;
 
-  printf( " Time taken to program: %f\n ", executionTime );
+  printf( "Time taken to program: %f\n", executionTime );
 
   if (bytes != NULL) free( bytes );
 }

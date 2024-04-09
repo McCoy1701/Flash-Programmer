@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "command.h"
+#include "commandLineRead.h"
 
 uint8_t* readFile( const char* filename, size_t *size )
 {
@@ -13,7 +13,7 @@ uint8_t* readFile( const char* filename, size_t *size )
 
   if ( file == NULL )
   {
-    printf( " failed to load file: %s\n ", filename );
+    printf( "failed to load file: %s\n", filename );
     return NULL;
   }
 
@@ -27,7 +27,7 @@ uint8_t* readFile( const char* filename, size_t *size )
 
   if ( bytes == NULL )
   {
-    printf( " bytes memory not allocated\n " );
+    printf( "bytes memory not allocated\n" );
     free( bytes );
     fclose( file );
     return NULL;
@@ -35,7 +35,7 @@ uint8_t* readFile( const char* filename, size_t *size )
 
   if (fread( bytes, sizeof( uint8_t ), *size, file ) != *size )
   {
-    printf( " failed to read bytes\n " );
+    printf( "failed to read bytes\n" );
     free( bytes );
     fclose( file );
     return NULL;
