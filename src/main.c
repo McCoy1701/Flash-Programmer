@@ -26,6 +26,12 @@ int main( int argc, char* argv[] )
   {
     if (strcmp( argv[ i ], "-w" ) == 0 )
     {
+      testId();
+      delay(100);
+      
+      flashErase();
+      delay(100);
+      
       bytes = readFile( argv[ i + 1 ], &size );
       
       printf( "writing %zu bytes to flash device\n", size );
